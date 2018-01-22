@@ -1,4 +1,4 @@
-QT       += core gui
+QT       += core gui webenginewidgets
 
 greaterThan(QT_MAJOR_VERSION, 4) {
     QT += widgets
@@ -11,7 +11,13 @@ TARGET = facebookdemo
 TEMPLATE = app
 
 SOURCES += main.cpp \
-    fbdemo.cpp
+    fbdemo.cpp \
+    webenginepage.cpp \
+    webwindow.cpp
 
 HEADERS += \
-    fbdemo.h
+    fbdemo.h \
+    webenginepage.h \
+    webwindow.h
+
+FORMS += webwindow.ui

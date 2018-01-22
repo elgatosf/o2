@@ -12,12 +12,14 @@
 #include "o0abstractstore.h"
 #include "o0requestparameter.h"
 
+class O2ReplyServer;
+
 /// Base class of OAuth authenticators
 class O0_EXPORT O0BaseAuth : public QObject {
     Q_OBJECT
 
 public:
-    explicit O0BaseAuth(QObject *parent = 0);
+    explicit O0BaseAuth(QObject *parent = 0, O0AbstractStore *store = 0, bool inUseExternalInterceptor = false);
 
 public:
     /// Are we authenticated?
@@ -48,6 +50,12 @@ public:
     QString clientSecret();
     void setClientSecret(const QString &value);
 
+    /// Page content on local host after successful oauth.
+    /// Provide it in case you do not want to close the browser, but display something
+    Q_PROPERTY(QByteArray replyContent READ replyContent WRITE setReplyContent)
+    QByteArray replyContent() const;
+    void setReplyContent(const QByteArray &value);
+
     /// TCP port number to use in local redirections.
     /// The OAuth "redirect_uri" will be set to "http://localhost:<localPort>/".
     /// If localPort is set to 0 (default), O2 will replace it with a free one.
@@ -67,6 +75,9 @@ public Q_SLOTS:
 
     /// De-authenticate.
     Q_INVOKABLE virtual void unlink() = 0;
+    
+    /// Handle OAuth callback when set up to use an external interceptor
+    Q_INVOKABLE void processOAuthCallbackFromExternalInterceptor(const QString &inURLString);
 
 Q_SIGNALS:
     /// Emitted when client needs to open a web browser window, with the given URL.
@@ -103,6 +114,9 @@ protected:
 
     /// Set extra tokens found in OAuth response
     void setExtraTokens(QVariantMap extraTokens);
+    
+    /// Handle OAuth callback when set up to use an external interceptor
+    virtual void processParamsFromExternalInterceptor(QMap<QString, QString> params) = 0;
 
 protected:
     QString clientId_;
@@ -116,6 +130,8 @@ protected:
     quint16 localPort_;
     O0AbstractStore *store_;
     QVariantMap extraTokens_;
+    bool useExternalInterceptor_;
+    O2ReplyServer *replyServer_;
 };
 
 #endif // O0BASEAUTH

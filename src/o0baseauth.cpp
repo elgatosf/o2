@@ -1,15 +1,40 @@
 #include <QDataStream>
 #include <QDebug>
+#include <QUrlQuery>
 
 #include "o0baseauth.h"
 #include "o0globals.h"
 #include "o0settingsstore.h"
+#include "o2replyserver.h"
 
 static const quint16 DefaultLocalPort = 1965;
 
-O0BaseAuth::O0BaseAuth(QObject *parent): QObject(parent) {
+O0BaseAuth::O0BaseAuth(QObject *parent, O0AbstractStore *store, bool inUseExternalInterceptor): QObject(parent), store_(0), useExternalInterceptor_(inUseExternalInterceptor) {
     localPort_ = DefaultLocalPort;
-    store_ = new O0SettingsStore(O2_ENCRYPTION_KEY, this);
+    
+    if(!inUseExternalInterceptor) {
+        replyServer_ = new O2ReplyServer(this);
+    }
+    
+    setStore(store);
+}
+
+void O0BaseAuth::processOAuthCallbackFromExternalInterceptor(const QString &inURLString)
+{
+    QUrl getTokenUrl(inURLString);
+    QUrlQuery query(getTokenUrl);
+    QList< QPair<QString, QString> > tokens = query.queryItems();
+    
+    QMultiMap<QString, QString> queryParams;
+    QPair<QString, QString> tokenPair;
+    foreach (tokenPair, tokens) {
+        // FIXME: We are decoding key and value again. This helps with Google OAuth, but is it mandated by the standard?
+        QString key = QUrl::fromPercentEncoding(QByteArray().append(tokenPair.first.trimmed().toLatin1()));
+        QString value = QUrl::fromPercentEncoding(QByteArray().append(tokenPair.second.trimmed().toLatin1()));
+        queryParams.insert(key, value);
+    }
+    
+    processParamsFromExternalInterceptor(queryParams);
 }
 
 void O0BaseAuth::setStore(O0AbstractStore *store) {
@@ -80,6 +105,20 @@ QString O0BaseAuth::clientSecret() {
 void O0BaseAuth::setClientSecret(const QString &value) {
     clientSecret_ = value;
     Q_EMIT clientSecretChanged();
+}
+
+QByteArray O0BaseAuth::replyContent() const {
+    if(replyServer_ != NULL) {
+        return replyServer_->replyContent();
+    }
+    
+    return QByteArray();
+}
+
+void O0BaseAuth::setReplyContent(const QByteArray &value) {
+    if(replyServer_ != NULL) {
+        return replyServer_->setReplyContent(value);
+    }
 }
 
 int O0BaseAuth::localPort() {

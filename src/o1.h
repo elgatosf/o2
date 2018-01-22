@@ -8,13 +8,19 @@
 #include "o0export.h"
 #include "o0baseauth.h"
 
-class O2ReplyServer;
-
 /// Simple OAuth 1.0 authenticator.
 class O0_EXPORT O1: public O0BaseAuth {
     Q_OBJECT
 
 public:
+    /// HTTP User-Agent header
+    /// Set user agent to a value unique for your application (https://tools.ietf.org/html/rfc7231#section-5.5.3)
+    /// if you see the following error in the application log:
+    /// O1::onTokenRequestError: 201 "Error transferring requestTokenUrl() - server replied: Forbidden" "Bad bot"
+    Q_PROPERTY(QByteArray userAgent READ userAgent WRITE setUserAgent)
+    QByteArray userAgent() const;
+    void setUserAgent(const QByteArray &value);
+
     /// Signature method
     Q_PROPERTY(QString signatureMethod READ signatureMethod WRITE setSignatureMethod NOTIFY signatureMethodChanged)
     QString signatureMethod();
@@ -48,13 +54,16 @@ public:
     void setAccessTokenUrl(const QUrl &value);
 
     /// Constructor.
-    explicit O1(QObject *parent = 0, QNetworkAccessManager *manager = 0);
+    explicit O1(QObject *parent = 0, QNetworkAccessManager *manager = 0, O0AbstractStore *store = 0, bool inUseExternalInterceptor = false);
 
     /// Parse a URL-encoded response string.
     static QMap<QString, QString> parseResponse(const QByteArray &response);
 
     /// Build the value of the "Authorization:" header.
     static QByteArray buildAuthorizationHeader(const QList<O0RequestParameter> &oauthParams);
+
+    /// Add common configuration (headers) to @p req.
+    void decorateRequest(QNetworkRequest &req, const QList<O0RequestParameter> &oauthParams);
 
     /// Create unique bytes to prevent replay attacks.
     static QByteArray nonce();
@@ -111,6 +120,10 @@ protected:
     /// Exchange temporary token to authentication token
     void exchangeToken();
 
+    /// Handle params from a OAuth callback when set up to use an external interceptor
+    virtual void processParamsFromExternalInterceptor(QMap<QString, QString> params);
+
+    QByteArray userAgent_;
     QUrl requestUrl_;
     QList<O0RequestParameter> requestParameters_;
     QString callbackUrl_;
@@ -119,7 +132,6 @@ protected:
     QString verifier_;
     QString signatureMethod_;
     QNetworkAccessManager *manager_;
-    O2ReplyServer *replyServer_;
 };
 
 #endif // O1_H

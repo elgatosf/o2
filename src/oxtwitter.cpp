@@ -9,7 +9,7 @@ const char XAUTH_PASSWORD[] = "x_auth_password";
 const char XAUTH_MODE[] = "x_auth_mode";
 const char XAUTH_MODE_VALUE[] = "client_auth";
 
-OXTwitter::OXTwitter(QObject *parent): O1Twitter(parent) {
+OXTwitter::OXTwitter(QObject *parent, bool inUseExternalInterceptor): O1Twitter(parent, inUseExternalInterceptor) {
 }
 
 QString OXTwitter::username() {
@@ -61,7 +61,7 @@ void OXTwitter::link() {
 
     // Post request
     QNetworkRequest request(accessTokenUrl());
-    request.setRawHeader(O2_HTTP_AUTHORIZATION_HEADER, buildAuthorizationHeader(oauthParams));
+    decorateRequest(request, oauthParams);
     request.setHeader(QNetworkRequest::ContentTypeHeader, O2_MIME_TYPE_XFORM);
     QNetworkReply *reply = manager_->post(request, createQueryParameters(xAuthParams_));
     connect(reply, SIGNAL(error(QNetworkReply::NetworkError)), this, SLOT(onTokenExchangeError(QNetworkReply::NetworkError)));

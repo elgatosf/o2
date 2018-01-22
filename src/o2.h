@@ -11,8 +11,6 @@
 #include "o2reply.h"
 #include "o0abstractstore.h"
 
-class O2ReplyServer;
-
 /// Simple OAuth2 authenticator.
 class O0_EXPORT O2: public O0BaseAuth {
     Q_OBJECT
@@ -59,12 +57,6 @@ public:
     QString apiKey();
     void setApiKey(const QString &value);
 
-    /// Page content on local host after successful oauth.
-    /// Provide it in case you do not want to close the browser, but display something
-    Q_PROPERTY(QByteArray replyContent READ replyContent WRITE setReplyContent)
-    QByteArray replyContent();
-    void setReplyContent(const QByteArray &value);
-
     /// Allow ignoring SSL errors?
     /// E.g. SurveyMonkey fails on Mac due to SSL error. Ignoring the error circumvents the problem
     Q_PROPERTY(bool ignoreSslErrors READ ignoreSslErrors WRITE setIgnoreSslErrors)
@@ -94,7 +86,7 @@ public:
 public:
     /// Constructor.
     /// @param  parent  Parent object.
-    explicit O2(QObject *parent = 0, QNetworkAccessManager *manager = 0);
+    explicit O2(QObject *parent = 0, QNetworkAccessManager *manager = 0, O0AbstractStore *store = 0, bool inUseExternalInterceptor = false);
 
     /// Get authentication code.
     QString code();
@@ -160,6 +152,9 @@ protected:
 
     /// Set token expiration time.
     void setExpires(int v);
+    
+    /// Handle params from a OAuth callback when set up to use an external interceptor
+    virtual void processParamsFromExternalInterceptor(QMap<QString, QString> params);
 
 protected:
     QString username_;
@@ -173,7 +168,6 @@ protected:
     QString localhostPolicy_;
     QString apiKey_;
     QNetworkAccessManager *manager_;
-    O2ReplyServer *replyServer_;
     O2ReplyList timedReplies_;
     GrantFlow grantFlow_;
 };
